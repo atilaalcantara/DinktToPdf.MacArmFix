@@ -1,0 +1,45 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# .NET build output
+bin/
+obj/
+out/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# C/C++ build artifacts
+*.o
+*.a
+*.dylib
+*.so
+*.dll
+*.exe
+
+# Generated PDFs (test output)
+*.pdf
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# VS Code
+.vscode/
+
+# Logs
+*.log

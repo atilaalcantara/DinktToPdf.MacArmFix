@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang='pt-BR'>
+
+<head>
+      
+  <meta charset='UTF-8'>
+      
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+      <title>PAC</title>
+      <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #333;
+      background-color: #fff;
+      margin: 0px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+      font-family: Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      -webkit-locale: 'pt-BR';
+      display: block;
+    }
+
+    header {
+      background-color: #fff;
+      text-align: center;
+      padding: 1.6em 0;
+    }
+
+    footer {
+      text-align: left;
+      padding: 1.8em 0;
+      position: relative;
+      bottom: 0;
+      width: 98%;
+      left: 2px;
+      font-size: 9px;
+    }
+
+    .titulo {
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .sub-titulo {
+      font-size: 16px;
+      background-color: black;
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    .casas {
+      color: #0033C6;
+    }
+
+    .bahia {
+      font-size: 38px;
+      color: #E71A3B;
+    }
+
+    .text-pequeno {
+      font-size: 10px;
+    }
+
+    .espaco {
+      width: 100%;
+      height: 3px;
+      display: flex;
+      border: 5px solid #fff;
+    }
+
+    div {
+      font-size: 16px;
+      line-height: 2.0;
+    }
+
+    .linha {
+      width: 100%;
+      border-bottom: 1px solid black;
+    }
+
+    .logo {
+      margin-bottom: 0px;
+      position: absolute;
+      top: 30px;
+      left: 2%;
+      text-align: left;
+      padding: 1px;
+      font-weight: bold;
+    }
+
+    .col-xs-3 {
+      width: 25%;
+    }
+
+    .col-xs-4 {
+      width: 33.33%;
+    }
+
+    .col-xs-5 {
+      width: 41%;
+    }
+
+    .col-xs-6 {
+      width: 50%;
+    }
+
+    .col-xs-7 {
+      width: 59%;
+    }
+
+    .col-xs-8 {
+      width: 66%;
+    }
+
+    .col-xs-9 {
+      width: 75%;
+    }
+
+    .col-xs-12 {
+      width: 100%;
+    }
+
+    .col-float {
+      float: left;
+      position: relative;
+      min-height: 1px;
+      padding-right: 10px;
+      padding-left: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    p,
+    .line-h {
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+        <div><span class='logo bahia col-xs-6'><b class='casas'>CASAS</b>BAHIA</span> <span
+                    class='titulo col-xs-6'>Proposta de Adesão</span></div>
+  </header>
+  <main>
+        <div class='form-group'></div>
+        <span class='col-xs-12 col-float text-pequeno'>Loja: {{ loja }}</span> <span
+              class='col-xs-7 col-float text-pequeno' style='padding: 0.5rem;'>DATA DE ADESÃO:
+                  {{ formatar_data_com_hora dados.data_de_adesao }}</span> <span
+              class='col-xs-5 col-float text-left'><b>Proposta n° {{converter_para_caixa_alta dados.id }}</b></span>
+        </div> <span class='espaco'></span>
+        <div class='form-group'>
+              <div class='col-xs-12 col-float sub-titulo'>Dados Pessoais</div>
+              <div class='col-xs-12 col-float'><b>Nome:</b> {{converter_para_caixa_alta
+        dados.dados_pessoais.nome_completo
+                    }}
+                </div>
+              <div class='col-xs-12 col-float'><b>Nome social:</b> {{converter_para_caixa_alta
+                    dados.dados_pessoais.nome_abreviado }}
+                </div>
+              <div class='col-xs-12 col-float'><b>Nome para impressão do cartão titular:</b> {{converter_para_caixa_alta
+                    dados.dados_cartao.nome_impresso }}
+                </div>
+              <div class='col-xs-12 col-float'><b>Nome da mãe:</b> {{converter_para_caixa_alta
+                    dados.dados_pessoais.nome_completo_mae }}
+                </div>
+              <div class='col-xs-4 col-float'><b>CPF:</b> {{ formatar_cpf dados.dados_pessoais.cpf }}</div>
+              <div class='col-xs-4 col-float'><b>Data de nascimento:</b> {{ formatar_data
+                    dados.dados_pessoais.data_nascimento }}
+                </div>
+              <div class='col-xs-4 col-float'><b>Sexo:</b> {{ formatar_genero dados.dados_pessoais.Genero }}</div>
+              <br />
+              <div class='col-xs-6 col-float'><b>Nacionalidade:</b> {{ formatar_enum dados.dados_pessoais.nacionalidade
+        |
+                    converter_para_caixa_alta }}
+                </div>
+              <div class='col-xs-6 col-float'><b>Estado civil:</b> {{formatar_enum dados.dados_pessoais.estado_civil |
+                    converter_para_caixa_alta }}
+                </div>
+          </div>
+        <span class='espaco'></span>
+        <div class='form-group'>
+              <div class='col-xs-12 col-float sub-titulo'>Localização e Contato</div>
+              <div class='col-xs-12 col-float'><b>Logradouro:</b> {{converter_para_caixa_alta
+                    dados.dados_endereco.logradouro }}
+                </div>
+              <div class='col-xs-12 col-float'><b>Complemento:</b> {{converter_para_caixa_alta
+                    dados.dados_endereco.complemento }}
+                </div>
+              <div class='col-xs-6 col-float'><b>Bairro:</b> {{converter_para_caixa_alta dados.dados_endereco.bairro }}
+                </div>
+              <div class='col-xs-6 col-float'><b>Cidade:</b> {{converter_para_caixa_alta dados.dados_endereco.cidade }}
+                </div>
+              <div class='col-xs-9 col-float'><b>Estado:</b> {{converter_uf_para_estado dados.dados_endereco.uf |
+                    remover_caracteres_especiais |
+                    converter_para_caixa_alta }}
+                </div>
+              <div class='col-xs-3 col-float'><b>CEP:</b> {{formatar_cep dados.dados_endereco.cep }}</div>
+              <div class='col-xs-6 col-float'><b>Celular:</b> {{formatar_telefone dados.contato.celular }}</div>
+              <div class='col-xs-6 col-float'><b>Residencial:</b> {{ formatar_telefone dados.contato.residencial }}
+      </div>
+              <div class='col-xs-12 col-float'><b>E-mail:</b> {{converter_para_caixa_alta dados.contato.email }}</div>
+          </div>
+        <span class='espaco'></span>
+        <div class='form-group'>
+              <div class='col-xs-12 col-float sub-titulo'>Dados Profissionais</div>
+              <div class='col-xs-12 col-float'><b>Natureza de ocupação:</b> {{natureza_da_ocupacao }}</div>
+              <div class='col-xs-12 col-float'><b>Profissão:</b> {{profissao }}</div>
+              <div class='col-xs-4 col-float'><b>Renda:</b> {{formatar_em_reais dados.dados_profissionais.renda }}</div>
+              <div class='col-xs-4 col-float'><b>Telefone comercial:</b> {{formatar_telefone
+                    dados.dados_profissionais.Comercial }}
+                </div>
+              <div class='col-xs-4 col-float'><b>Ramal:</b>
+                </div>
+          </div>
+        <span class='espaco'></span>
+        <div class='form-group'>
+              <div class='col-xs-12 col-float sub-titulo'>Produto</div>
+              <span class='col-xs-5 col-float'><b>Cartão
+                              titular:</b> {{ dados.produto_parceiro }}</span> <span
+                    class='col-xs-4 col-float'><b>Adicionais:</b></span><br /> <span class='col-xs-3 col-float'><b>Data
+          de
+                              vencimento:</b> {{ajustar_para_duas_casas dados.dados_cartao.data_de_vencimento
+        }}</span><br />
+              <span class='col-xs-12 col-float linha line-h'>12x R$ 0,00 (1° ano: 12x R$ 0,00)</span>
+              <p class='col-xs-12 col-float linha'><b>Pacote SMS Serviços Digitais: R$ 0,00</b></p>
+          </div>
+        <span class='espaco'></span>
+        <div class='form-group'>
+              <div class='col-xs-12 col-float sub-titulo'>Termos de Aceite</div>
+              <span                 class='col-xs-12 col-float linha'>Aceito receber fatura por e-mail.<b> {{
+          formatar_optins 2
+                              }}</b></span> <span class='col-xs-12 col-float linha'>Aceito receber comunicações do
+        Bradescard e
+                        seus parceiros por SMS.:<b> {{ formatar_optins 7 }}</b></span> <span
+                    class='col-xs-12 col-float linha'>Aceito receber comunicações do Bradescard e seus parceiros por
+                        e-mail.:<b> {{ formatar_optins 8 }}</b></span>
+              <p class='col-xs-12 col-float linha'> Declaro que li e estou de acordo com as condições de contratação do
+                    pacote de SMS Serviços Digitais (isento de cobrança de Tarifa), que corresponde ao envio de
+        mensagens
+                    relativas às transações realizadas com o meu cartão de crédito. Estou ciente que posso solicitar, a
+                    qualquer momento, o cancelamento do pacote de SMS Serviços Digitais através da central de
+        atendimento.
+                </p>
+          </div>
+        <span class='espaco'></span>
+        <div class='form-group'>
+              <div class='col-xs-12 col-float sub-titulo'>Texto Legal</div>
+
+              <p class='col-xs-12 col-float'>
+                    Solicito a emissão de Cartão de Crédito indicado nesta Proposta de Adesão,
+                    em meu nome, para ser utilizado em conformidade com as cláusulas e condições estabelecidas no
+        respectivo
+                    Regulamento da Utilização dos Cartões de Crédito, que tive acesso no ato da minha solicitação, e que
+        li,
+                    entendi e concordei com todas as suas cláusulas e condições no site do Banco Bradescard S.A.
+                    Responsabilizo-me pelas informações constantes nesta Proposta de Adesão, inclusive quanto à
+        utilização
+                    do(s) cartão(ões) adicional(ais) por mim indicado(s) nesta Proposta de Adesão ou futuramente,
+        conforme
+                    as condições previstas no mencionado regulamento.
+                </p>
+
+              <p class='col-xs-12 col-float'>
+                    Sua solicitação poderá ser submetida a novas análises de crédito durante os próximos 4 (quatro)
+        meses.
+                    Em caso de aprovação, o cartão será emitido e encaminhado automaticamente para o endereço informado
+        na
+                    proposta.
+                </p>
+
+              <p class='col-xs-12 col-float'>
+                    Tarifa de Anuidade Diferenciada: não será cobrada a Tarifa de Anuidade
+                    Diferenciada caso o cartão seja utilizado exclusivamente dentro das Lojas Casas Bahia. Após a
+        primeira
+                    utilização do cartão em qualquer estabelecimento que não seja a Loja Casas Bahia, a Tarifa de
+        Anuidade
+                    Diferenciada passará a ser cobrada. Disponível para os Cartões Casas Bahia Fácil Elo Mais. <br /> O
+                    Banco Bradescard S.A., neste ato, comunica ao Cliente que:<br /> a) a presente operação de crédito
+        será
+                    registrada no Sistema de Informações de Créditos (SCR), que consiste num banco de dados com
+        informações
+                    sobre as operações de crédito contratadas por pessoas físicas e jurídicas perante as instituições
+                    financeiras e que por estas são remetidas ao Banco Central do Brasil - BACEN, na condição de
+                    administrador do SCR, sob responsabilidade das instituições;<br /> b) o SCR tem por finalidades, (i)
+                    fornecer informações ao BACEN para fins de monitoramento do crédito no sistema financeiro e para o
+                    exercício de suas atividades de fiscalização; e (ii) propiciar o intercâmbio, entre as instituições
+                    financeiras sujeitas ao dever de conservar o sigilo bancário de que trata a Lei Complementar nº
+                    105/2001, das informações referentes às responsabilidades de Clientes em quaisquer operações de
+        crédito,
+                    com o objetivo de subsidiar decisões de crédito e de negócios, conforme a política de crédito das
+                    instituições;<br /> c) Cliente poderá ter acesso aos dados de sua responsabilidade no SCR, por meio
+        de
+                    acesso ao Registrato - Extrato do Registro de Informações no BACEN (www.bcb.gov.br), ao gov.br
+                    (www.gov.br) ou da Central Atendimento ao Público do BACEN. Os extratos com os dados são elaborados
+        de
+                    acordo com critérios contábeis e metodologia específica estabelecidos pelo BACEN e se referem ao
+        saldo
+                    existente no último dia do mês de referência;<br /> d) os pedidos de correções, exclusões, registros
+        de
+                    medidas judiciais e manifestações de discordância quanto às informações constantes do SCR deverão
+        ser
+                    dirigidos aos canais de atendimento desta Organização, por meio de requerimento escrito e
+        fundamentado
+                    do Cliente, acompanhado da respectiva decisão judicial, quando for o caso;<br /> e) a consulta sobre
+                    qualquer informação constante do SCR dependerá da prévia autorização do Cliente. Declarando-se
+        ciente do
+                    comunicado acima, o Cliente, neste ato, autoriza a Organização Bradesco, incluindo o Banco
+        Bradescard
+                    S.A. e o Banco Bradesco, e demais instituições financeiras e empresas a ele ligadas ou por ele
+                    controladas, bem como seus sucessores, a consultar e registrar os débitos e responsabilidades
+                    decorrentes de operações com características de crédito, que constem ou venham a constar em nome do
+                    Cliente, no SCR ou nos sistemas que venham a complementar ou a substituir o SCR. O Cliente, ainda,
+                    concorda em estender a presente autorização de consulta ao SCR às demais instituições autorizadas a
+                    consultá-lo e que adquiram ou recebam em garantia, ou manifestem interesse de adquirir ou de receber
+        em
+                    garantia, total ou parcialmente, operações de crédito sob sua responsabilidade.<br /> Sua
+        solicitação poderá
+                    ser submetida a novas análises de crédito
+                    durante os próximos 4 (quatro) meses, conforme os critérios
+                    estabelecidos pela instituição financeira responsável. A aprovação não
+                    é assegurada, estando condicionada ao resultado dessas avaliações.
+                    Em caso de aprovação, o cartão será emitido e encaminhado
+                    automaticamente para o endereço informado na proposta.
+                </p>
+              <p class='col-xs-12 col-float'>
+                    O Emissor se compromete a acolher o pedido de cancelamento do produto ou
+                    serviço por quaisquer dos possíveis canais disponíveis para contratação dos produtos e/ou serviços
+                    contidos nesta 'Proposta de Adesão'. <b>Estou ciente que o Banco Bradescard S.A. coletará a minha
+          imagem
+                      e/ou meus dados biométricos para que seja possível garantir a minha identificação em operações
+                      efetuadas durante a vigência do contrato que mantenho com este banco, com a finalidade de prevenir
+                      fraudes e garantir a minha segurança, respeitada a minha privacidade e a proteção dos meus dados
+                      pessoais e em observância à legislação vigente.</b><br /> Os dados presentes neste documento serão
+                    utilizados única e exclusivamente para cumprir com a finalidade a que se destinam e em respeito a
+        toda a
+                    legislação aplicável sobre segurança da informação, privacidade e proteção de dados, inclusive, mas
+        não
+                    se limitando à Lei Geral de Proteção de Dados (13.709/2018).<br /> Estou ciente de que os meus dados
+                    pessoais também podem ser compartilhados nos termos da Diretiva de Privacidade.<br /> Para obter
+        maiores
+                    informações sobre como os seus dados pessoais são tratados pelo Banco Bradescard S/A, consulte o
+        Aviso
+                    de Privacidade disponível para consulta em APP Bradesco Cartões ou acesse a Diretiva de Privacidade
+        da
+                    Organização Bradesco por meio do endereço eletrônico http://www.bradescoseguranca.com.br.
+                </p>
+          </div>
+  </main>
+  <footer><span><b>Central de Atendimento ao Cliente</b></span><br /> <span>4004-7332 Capitais e Regiões
+                  Metropolitanas</span><br /> <span>0800 701 7332 Demais Regiões</span><br /> <span>Atendimento de
+      segunda a
+                  sábado das 8h às 20h, exceto feriados.</span><br /> <span>Consultas, Informações e Serviços
+                  Transacionais.</span><br /> <span>Para comunicar perda ou roubo do Cartão, 24 horas por dia, 7 dias
+      por
+                  semana.</span><br /> <br /> <span><b>SAC - BradesCard - 0800 730 5030</b></span><br /> <span>SAC -
+                  Deficiência Auditiva ou de Fala</span><br /> <span>0800 722 0099</span><br /> <span>Atendimento 24
+      horas, 7
+                  dias por semana.</span><br /> <span>Reclamações, Cancelamentos e Informações Gerais.</span><br />
+    <br />
+        <span>Ouvidoria - 0800 722 2073</span><br /> <span>Atendimento de segunda a sexta-feira das 8h às 18h, exceto
+                  feriados.</span><br /> <span>Se não ficar satisfeito com a solução apresentada, contate a
+                  Ouvidoria.</span><br />
+  </footer>
+</body>
+
+</html>
