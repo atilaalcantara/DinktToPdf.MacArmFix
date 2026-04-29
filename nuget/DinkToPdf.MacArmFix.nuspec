@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>DinkToPdf.MacArmFix</id>
+    <version>1.0.0</version>
+    <authors>atilao4501</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <projectUrl>https://github.com/atilao4501/DinkToPdf.MacArmFix</projectUrl>
+    <description>
+      Drop-in libwkhtmltox.dylib for macOS Apple Silicon (arm64) that makes DinkToPdf work
+      natively on M1/M2/M3/M4 Macs without running an x86 container.
+
+      Reimplements the wkhtmltopdf C API using WKWebView (Safari's engine) and
+      CGPDFContext/NSPrintOperation — the helper binary is embedded inside the dylib,
+      so only one file is shipped.
+
+      Install this package alongside DinkToPdf and the native library is automatically
+      placed in runtimes/osx-arm64/native/ at build time.
+    </description>
+    <summary>Native libwkhtmltox.dylib shim for DinkToPdf on macOS Apple Silicon (arm64).</summary>
+    <tags>dinkToPdf wkhtmltopdf pdf macos arm64 apple-silicon webkit m1 m2 m3</tags>
+    <readme>README.md</readme>
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="DinkToPdf" version="1.0.8" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="DinkToPdf" version="1.0.8" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="../out/libwkhtmltox.dylib"
+          target="runtimes/osx-arm64/native/libwkhtmltox.dylib" />
+    <file src="../README.md" target="README.md" />
+  </files>
+</package>

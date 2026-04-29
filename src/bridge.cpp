@@ -128,6 +128,30 @@ PaperSpec resolve_paper(const Settings* s) {
     return p;
 }
 
+// ---- JSON helpers --------------------------------------------------------
+
+std::string json_escape(const std::string& s) {
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (unsigned char c : s) {
+        switch (c) {
+            case '"':  out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\n': out += "\\n";  break;
+            case '\r': out += "\\r";  break;
+            case '\t': out += "\\t";  break;
+            default:
+                if (c < 0x20) {
+                    char buf[8]; std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                    out += buf;
+                } else {
+                    out += (char)c;
+                }
+        }
+    }
+    return out;
+}
+
 // ---- Embedded helper extraction ------------------------------------------
 
 // Look up "this dylib" mach_header so getsectiondata() can find our embedded
@@ -254,20 +278,101 @@ bool read_u32_be(int fd, uint32_t* out) {
     return true;
 }
 
-std::string make_config_json(const PaperSpec& p) {
-    char buf[512];
-    std::snprintf(buf, sizeof(buf),
-        "{\"paper_w_pt\":%.3f,\"paper_h_pt\":%.3f,"
-        "\"margin_top_pt\":%.3f,\"margin_right_pt\":%.3f,"
-        "\"margin_bottom_pt\":%.3f,\"margin_left_pt\":%.3f,"
-        "\"javascript\":true,\"load_images\":true,"
-        "\"print_background\":true,\"load_timeout_sec\":30.0}",
-        p.w_pt, p.h_pt, p.mt, p.mr, p.mb, p.ml);
-    return std::string(buf);
+// Build JSON config for the helper process.
+// Header/footer settings come from the first object's settings (os).
+// header.spacing in wkhtmltopdf is a unitless double representing mm.
+std::string make_config_json(const PaperSpec& p,
+                             const Settings* gs,
+                             const Settings* os) {
+    auto hdr = [&](const std::string& k) { return get_setting(os, "header." + k); };
+    auto ftr = [&](const std::string& k) { return get_setting(os, "footer." + k); };
+
+    auto mm_to_pt = [](const std::string& v, double def) -> double {
+        if (v.empty()) return def;
+        try { return std::stod(v) * 72.0 / 25.4; } catch (...) { return def; }
+    };
+    auto str_to_d = [](const std::string& v, double def) -> double {
+        if (v.empty()) return def;
+        try { return std::stod(v); } catch (...) { return def; }
+    };
+
+    bool js     = get_setting(gs, "web.enableJavascript") != "false";
+    bool images = get_setting(gs, "web.loadImages")       != "false";
+    bool bg     = get_setting(gs, "web.printBackground")  != "false";
+
+    std::string title   = get_setting(gs, "documentTitle");
+    std::string hfn     = hdr("fontName"); if (hfn.empty()) hfn = "Helvetica";
+    std::string ffn     = ftr("fontName"); if (ffn.empty()) ffn = "Helvetica";
+    bool hdr_line       = (hdr("line") == "true" || hdr("line") == "1");
+    bool ftr_line       = (ftr("line") == "true" || ftr("line") == "1");
+
+    std::string j;
+    j.reserve(1024);
+    j += "{";
+
+    auto add_d = [&](const char* key, double val) {
+        char tmp[64]; std::snprintf(tmp, sizeof(tmp), "%.6f", val);
+        j += '"'; j += key; j += "\":"; j += tmp; j += ',';
+    };
+    auto add_b = [&](const char* key, bool val) {
+        j += '"'; j += key; j += "\":";
+        j += val ? "true" : "false"; j += ',';
+    };
+    auto add_s = [&](const char* key, const std::string& val) {
+        j += '"'; j += key; j += "\":\"";
+        j += json_escape(val); j += "\",";
+    };
+
+    add_d("paper_w_pt",       p.w_pt);
+    add_d("paper_h_pt",       p.h_pt);
+    add_d("margin_top_pt",    p.mt);
+    add_d("margin_right_pt",  p.mr);
+    add_d("margin_bottom_pt", p.mb);
+    add_d("margin_left_pt",   p.ml);
+    add_b("javascript",       js);
+    add_b("load_images",      images);
+    add_b("print_background", bg);
+    add_d("load_timeout_sec", 30.0);
+
+    // Header
+    add_s("header_left",       hdr("left"));
+    add_s("header_center",     hdr("center"));
+    add_s("header_right",      hdr("right"));
+    add_d("header_font_size",  str_to_d(hdr("fontSize"), 9.0));
+    add_s("header_font_name",  hfn);
+    add_b("header_line",       hdr_line);
+    add_d("header_spacing_pt", mm_to_pt(hdr("spacing"), 0.0));
+
+    // Footer
+    add_s("footer_left",       ftr("left"));
+    add_s("footer_center",     ftr("center"));
+    add_s("footer_right",      ftr("right"));
+    add_d("footer_font_size",  str_to_d(ftr("fontSize"), 9.0));
+    add_s("footer_font_name",  ffn);
+    add_b("footer_line",       ftr_line);
+    add_d("footer_spacing_pt", mm_to_pt(ftr("spacing"), 0.0));
+
+    add_s("document_title", title);
+
+    // Outline (PDF bookmarks from headings). Global settings: outline / outlineDepth.
+    bool outline = (get_setting(gs, "outline") == "true");
+    int  depth   = 4;
+    {
+        auto ds = get_setting(gs, "outlineDepth");
+        if (!ds.empty()) try { depth = std::stoi(ds); } catch (...) {}
+    }
+    add_b("outline",       outline);
+    add_d("outline_depth", (double)depth);
+
+    if (!j.empty() && j.back() == ',') j.pop_back();
+    j += '}';
+    return j;
 }
 
 bool run_helper(const std::string& html,
                 const PaperSpec& paper,
+                const Settings* gs,
+                const Settings* os,
                 std::vector<unsigned char>& out_pdf,
                 std::string& err) {
     std::string helper_path;
@@ -308,7 +413,7 @@ bool run_helper(const std::string& html,
 
     bool ok_write = true;
     {
-        std::string cfg = make_config_json(paper);
+        std::string cfg = make_config_json(paper, gs, os);
         ok_write &= write_u32_be(in_pipe[1], (uint32_t)cfg.size());
         ok_write &= write_all  (in_pipe[1], cfg.data(), cfg.size());
         ok_write &= write_u32_be(in_pipe[1], (uint32_t)html.size());
@@ -353,10 +458,11 @@ bool run_helper(const std::string& html,
 
 bool html_to_pdf(const std::string& html,
                  const Settings* global,
+                 const Settings* obj_settings,
                  std::vector<unsigned char>& output,
                  std::string& err) {
     PaperSpec paper = resolve_paper(global);
-    return run_helper(html, paper, output, err);
+    return run_helper(html, paper, global, obj_settings, output, err);
 }
 
 } // namespace
@@ -445,18 +551,20 @@ EXPORT int  wkhtmltopdf_convert(void* converter_ptr) {
     auto* c = static_cast<Converter*>(converter_ptr);
     std::string html;
     Settings* gs = nullptr;
+    const Settings* os = nullptr;
     {
         std::lock_guard<std::mutex> lock(g_mutex);
         c->output.clear(); c->error.clear();
         html = compose_html(c);
         gs   = c->global;
+        os   = c->objects.empty() ? nullptr : c->objects.front().settings;
     }
     log_line("convert html_len=" + std::to_string(html.size()));
     if (c->phase_changed_callback)    c->phase_changed_callback(c);
     if (c->progress_changed_callback) c->progress_changed_callback(c, 10);
 
     std::string err;
-    bool ok = html_to_pdf(html, gs, c->output, err);
+    bool ok = html_to_pdf(html, gs, os, c->output, err);
 
     if (!ok || c->output.empty()) {
         std::lock_guard<std::mutex> lock(g_mutex);

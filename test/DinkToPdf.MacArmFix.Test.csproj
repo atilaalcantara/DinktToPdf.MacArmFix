@@ -6,8 +6,8 @@
     <RuntimeIdentifier>osx-arm64</RuntimeIdentifier>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>DinkToPdfWebKitBridge.Test</RootNamespace>
-    <AssemblyName>DinkToPdfWebKitBridgeTest</AssemblyName>
+    <RootNamespace>DinkToPdf.MacArmFix.Test</RootNamespace>
+    <AssemblyName>DinkToPdf.MacArmFix.Test</AssemblyName>
     <NoWarn>$(NoWarn);NU1605</NoWarn>
   </PropertyGroup>
 

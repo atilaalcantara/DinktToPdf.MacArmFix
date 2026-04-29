@@ -1,48 +1,34 @@
-# DinkToPdfWebKitBridge
+# DinkToPdf.MacArmFix
 
-Drop-in `libwkhtmltox.dylib` for **macOS arm64** (Apple Silicon) so .NET projects
-that depend on [DinkToPdf](https://github.com/rdvojmoc/DinkToPdf) can render
-PDFs natively on M1/M2/M3 Macs without spinning up an x86 container.
+Native `libwkhtmltox.dylib` shim for **macOS Apple Silicon (arm64)** — makes [DinkToPdf](https://github.com/rdvojmoc/DinkToPdf) work natively on M1/M2/M3/M4 Macs without running an x86 container.
 
-## Como foi feito
+## Install
 
-Este projeto **não usa nenhum código do wkhtmltopdf**. É uma reimplementação do zero que expõe a mesma API C pública (`wkhtmltopdf_convert` e funções relacionadas) que o wkhtmltopdf original expõe — o DinkToPdf chama essas funções via P/Invoke sem perceber a diferença.
+```bash
+dotnet add package DinkToPdf.MacArmFix
+dotnet add package DinkToPdf
+```
 
-### Tecnologias utilizadas
+That's it. The native library is automatically placed in `runtimes/osx-arm64/native/` at build time.
 
-| Componente | Tecnologia |
+## Why this exists
+
+`DinkToPdf` relies on `libwkhtmltox`, which is built on Qt WebKit. Qt WebKit has no official macOS ARM64 support, so the official binaries crash or simply don't exist on Apple Silicon.
+
+This project **reimplements the exact same wkhtmltopdf C public API** (`wkhtmltopdf_convert` and related functions) using native macOS technologies — DinkToPdf calls these functions via P/Invoke and never notices the difference.
+
+| Component | Technology |
 |---|---|
-| Shim da API C | C++17 (`bridge.cpp`) |
-| Renderização HTML | `WKWebView` (WebKit nativo do macOS) |
-| Geração de PDF | `CGPDFContext` + `NSPrintOperation` (CoreGraphics / AppKit) |
-| Paginação | JavaScript (`scrollHeight`) + `WKPDFConfiguration.rect` |
-| Linguagem do helper | Objective-C++ (`helper.mm`) |
+| C API shim | C++17 (`bridge.cpp`) |
+| HTML rendering | `WKWebView` (macOS native WebKit — same engine as Safari) |
+| PDF generation | `CGPDFContext` + `NSPrintOperation` (CoreGraphics / AppKit) |
+| Pagination | JavaScript (`scrollHeight`) + `WKPDFConfiguration.rect` |
+| Helper process | Objective-C++ (`helper.mm`) |
 | Build | `clang++` via `build.sh` |
-
-### Por que não usa o wkhtmltopdf
-
-O wkhtmltopdf usa Qt WebKit, que não tem suporte oficial para macOS ARM64. Em vez de portar ou emular, este projeto usa o **WebKit do próprio sistema operacional** — a mesma engine de renderização do Safari — que já está disponível nativamente em todos os Macs com Apple Silicon.
-
-### Unidades suportadas na conversão de tamanho
-
-Margens e dimensões de página são convertidas para pontos PDF:
-
-| Unidade | Conversão |
-|---|---|
-| `mm` | `× 72 / 25.4` |
-| `cm` | `× 72 / 2.54` |
-| `in` | `× 72` |
-| `px` | `× 72 / 96` |
-| `pt` | `× 1` |
-
-Tamanho padrão: **A4** (595 × 842 pt) com margens de 36 pt em todos os lados.
 
 ## Architecture
 
-`DinkToPdf` calls `wkhtmltopdf_convert` from a background worker thread. macOS
-WebKit (`WKWebView`) refuses to initialize off the main thread (hard
-`RELEASE_ASSERT(isMainThread())`). To bypass that without changing the public
-DinkToPdf API, this shim runs the rendering in a separate process:
+`DinkToPdf` calls `wkhtmltopdf_convert` from a background worker thread. macOS WebKit (`WKWebView`) refuses to initialize off the main thread (`RELEASE_ASSERT(isMainThread())`). To work around this without modifying DinkToPdf, the shim runs rendering in a separate process:
 
 ```
 [.NET app] → DinkToPdf P/Invoke → libwkhtmltox.dylib
@@ -53,11 +39,56 @@ DinkToPdf API, this shim runs the rendering in a separate process:
                               WKWebView + NSPrintOperation → PDF
 ```
 
-The helper executable is **embedded inside the dylib** (Mach-O segment
-`__DATA,__helperbin`) and extracted to a temp file the first time it's used —
-end users only need to ship one file: `libwkhtmltox.dylib`.
+The helper executable is **embedded inside the dylib** (Mach-O segment `__DATA,__helperbin`) and extracted to a temp file on first use — end users ship only one file: `libwkhtmltox.dylib`.
 
-## Build
+## Supported API
+
+| Function / Setting | Support |
+|---|---|
+| `wkhtmltopdf_convert`, `get_output`, `add_object` | ✅ |
+| `size.paperSize` (A3, A4, A5, Letter, Legal) | ✅ |
+| `size.width` / `size.height` (custom) | ✅ |
+| `orientation` (Portrait / Landscape) | ✅ |
+| `margin.top/right/bottom/left` | ✅ |
+| `out` (save to file) | ✅ |
+| `web.enableJavascript`, `web.loadImages`, `web.printBackground` | ✅ |
+| Text headers/footers (`header.left/center/right`, `footer.*`) | ✅ |
+| Header/footer variables (`[page]`, `[toPage]`, `[date]`, `[time]`, `[title]`) | ✅ |
+| `header.fontSize`, `header.fontName`, `header.line`, `header.spacing` | ✅ |
+| `outline` (PDF bookmarks via `h1`–`h6`) | ✅ |
+| `outlineDepth` | ✅ |
+| `documentTitle` (global setting) | ✅ |
+
+### Known limitations
+
+| Feature | Status | Reason |
+|---|---|---|
+| `header.htmlUrl` / `footer.htmlUrl` | ❌ Not implemented | Requires a second `WKWebView` per page with JS variable substitution. PRs welcome. |
+| TOC (automatic table of contents) | ❌ Not implemented | Requires an extra rendering pass. PRs welcome. |
+| `page.includeInOutline` (per object) | ⚠️ Ignored | Use the global `outline` setting instead. |
+| Multiple HTML objects per conversion | ⚠️ Partial | Objects are concatenated into a single HTML; header/footer settings from the first object apply to all. |
+
+### Display session requirement
+
+This project requires an **active graphical user session on macOS** (even with the screen locked). It does not work on headless Linux servers or Docker containers, as `WKWebView` requires an NSApp with a run loop and an off-screen window.
+
+For CI, use macOS runners (e.g. `macos-latest` on GitHub Actions), which have a graphical session available.
+
+## Supported size units
+
+Margins and page dimensions are converted to PDF points:
+
+| Unit | Conversion |
+|---|---|
+| `mm` | `× 72 / 25.4` |
+| `cm` | `× 72 / 2.54` |
+| `in` | `× 72` |
+| `px` | `× 72 / 96` |
+| `pt` | `× 1` |
+
+Default page size: **A4** (595 × 842 pt) with 36 pt margins on all sides.
+
+## Build from source
 
 ```bash
 ./build.sh
@@ -65,24 +96,41 @@ end users only need to ship one file: `libwkhtmltox.dylib`.
 
 Produces `out/libwkhtmltox.dylib`.
 
-## Test
+### Pack NuGet
+
+```bash
+./build.sh
+nuget pack nuget/DinkToPdf.MacArmFix.nuspec
+```
+
+### Test
 
 ```bash
 cp out/libwkhtmltox.dylib test/runtimes/osx-arm64/native/
-cd test
-dotnet run -r osx-arm64
+cd test && dotnet run -r osx-arm64
 ```
 
-A `complex-dinktopdf-arm-test.pdf` file should appear next to the test binary.
+A `complex-dinktopdf-arm-test.pdf` should appear next to the test binary.
 
-## Layout
+## Repository layout
 
-- `src/helper.mm` — Cocoa helper executable (WKWebView + NSPrintOperation).
-- `src/bridge.cpp` — wkhtmltopdf C API shim, manages helper subprocess.
-- `build.sh` — compiles helper, then dylib with embedded helper segment.
-- `test/` — minimal DinkToPdf consumer used to validate end-to-end.
+```
+src/
+  bridge.cpp       — wkhtmltopdf C API shim, manages helper subprocess
+  helper.mm        — Cocoa helper (WKWebView + NSPrintOperation)
+nuget/
+  DinkToPdf.MacArmFix.nuspec  — NuGet package definition
+test/
+  DinkToPdf.MacArmFix.Test.csproj
+  Program.cs       — end-to-end smoke test
+  assets/          — sample HTML
+build.sh           — compiles helper then dylib with embedded helper segment
+```
 
 ## Debugging
 
-Set `WKHTMLTOPDF_SHIM_LOG=/tmp/shim.log` to enable verbose API tracing inside
-the dylib. The helper prints fatal errors to stderr.
+Set `WKHTMLTOPDF_SHIM_LOG=/tmp/shim.log` to enable verbose API tracing inside the dylib. The helper prints fatal errors to stderr.
+
+## License
+
+MIT
